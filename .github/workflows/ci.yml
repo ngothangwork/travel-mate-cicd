@@ -3,45 +3,31 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  backend:
+  build-and-push:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v3
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Build backend
-        run: mvn -B clean package -DskipTests -f travel-mate/pom.xml
-
+      # ✅ Login DockerHub
       - name: Login to DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Build & Push Backend Image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/travelmate-backend:latest ./travel-mate
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/travelmate-backend:latest
+      # ✅ Build & Push Backend
+      - name: Build backend Docker image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/travelmate-backend:latest ./travel-mate
 
-  frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+      - name: Push backend Docker image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/travelmate-backend:latest
 
-      - name: Build frontend
-        run: |
-          cd travel-mate-fe
-          npm install
-          npm run build
+      # ✅ Build & Push Frontend
+      - name: Build frontend Docker image
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/travelmate-frontend:latest ./travel-mate-fe
 
-      - name: Login to DockerHub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Build & Push Frontend Image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/travelmate-frontend:latest ./travel-mate-fe
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/travelmate-frontend:latest
+      - name: Push frontend Docker image
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/travelmate-frontend:latest

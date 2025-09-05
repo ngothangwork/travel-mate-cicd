@@ -1,43 +1,42 @@
-version: "3.8"
+version: "3.9"
 
 services:
   backend:
-    build:
-      context: ./travel-mate
-      dockerfile: Dockerfile
-    container_name: travel-backend
+    image: ngoquangthang/travelmate-backend:latest
+    container_name: travelmate-backend
     restart: always
     ports:
       - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=123456
+      - DB_NAME=travelmate
     depends_on:
       - db
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:sqlserver://db:1433;databaseName=travelmate;encrypt=false
-      - SPRING_DATASOURCE_USERNAME=sa
-      - SPRING_DATASOURCE_PASSWORD=Thang@123  
 
   frontend:
-    build:
-      context: ./travel-mate-fe
-      dockerfile: Dockerfile
-    container_name: travel-frontend
+    image: ngoquangthang/travelmate-frontend:latest
+    container_name: travelmate-frontend
     restart: always
     ports:
-      - "3000:80"
+      - "80:80"
     depends_on:
       - backend
 
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: travel_mate
+    image: mysql:8
+    container_name: travelmate-db
     restart: always
     ports:
-      - "1433:1433"
+      - "3306:3306"
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=Thang@123
+      - MYSQL_ROOT_PASSWORD=123456
+      - MYSQL_DATABASE=travelmate
     volumes:
-      - mssql_data:/var/opt/mssql
+      - db_data:/var/lib/mysql
 
 volumes:
-  mssql_data:
+  db_data:
