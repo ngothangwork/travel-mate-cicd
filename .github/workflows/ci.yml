@@ -1,9 +1,7 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
 
 jobs:
@@ -18,23 +16,32 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Build backend with Maven
+      - name: Build backend
         run: mvn -B clean package -DskipTests -f travel-mate/pom.xml
+
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build & Push Backend Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/travelmate-backend:latest ./travel-mate
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/travelmate-backend:latest
 
   frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm install
-        working-directory: travel-mate-fe
-
       - name: Build frontend
-        run: npm run build
-        working-directory: travel-mate-fe
+        run: |
+          cd travel-mate-fe
+          npm install
+          npm run build
+
+      - name: Login to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build & Push Frontend Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/travelmate-frontend:latest ./travel-mate-fe
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/travelmate-frontend:latest
